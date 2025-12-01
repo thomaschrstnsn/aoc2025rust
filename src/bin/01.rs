@@ -44,7 +44,7 @@ impl TryFrom<&str> for Operation {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let (dir, num) = value.split_at(1);
-        if dir.len() != 1 || num.len() == 0 {
+        if dir.len() != 1 || num.is_empty() {
             return Err(OperationParsingError::InvalidShape {
                 found: value.into(),
             });
@@ -83,7 +83,7 @@ impl LockState {
             Operation::Right(offset) => offset,
         };
 
-        let mut zeros: usize = (offset / 100) as usize;
+        let mut zeros: usize = offset / 100;
         let offset = offset % 100;
         let mut next = match op {
             Operation::Left(_) => (self.0 as isize) - (offset as isize),
