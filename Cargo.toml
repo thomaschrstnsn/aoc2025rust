@@ -1,7 +1,7 @@
 [package]
 name = "advent_of_code"
 version = "0.12.0"
-authors = ["Felix Spöttel <1682504+fspoettel@users.noreply.github.com>"]
+authors = ["Thomas Fisker Christensen <thomas@chrstnsn.dk>"]
 edition = "2024"
 default-run = "advent_of_code"
 publish = false
@@ -29,3 +29,4 @@ tinyjson = "2.5.1"
 
 # Solution dependencies
 thiserror = "2"
+itertools = "0.14.0"
