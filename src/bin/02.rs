@@ -80,21 +80,23 @@ fn part_one_invalid_id(id: usize) -> bool {
     if id.ilog10().is_multiple_of(2) {
         return false;
     }
-    let decimals = format!("{}", id).chars().collect::<Vec<char>>();
+    let decimals = format!("{}", id);
     let (first, second) = decimals.split_at(decimals.len() / 2);
 
     first == second
 }
 
 fn part_two_invalid_id(id: usize) -> bool {
-    let decimals = format!("{}", id).chars().collect::<Vec<char>>();
+    let decimals = format!("{}", id);
 
-    let max_length = decimals.len() / 2;
+    let length = decimals.len();
 
-    for l in (1..=max_length).rev() {
-        let chunks = decimals.iter().chunks(l);
-        let mut chunks = chunks.into_iter().map(|c| c.collect::<String>());
-
+    let max_chunk_length = length / 2;
+    for chunk_length in 1..=max_chunk_length {
+        if length % chunk_length != 0 {
+            continue;
+        }
+        let mut chunks = decimals.as_bytes().chunks(chunk_length);
         if chunks.all_equal() {
             return true;
         }
