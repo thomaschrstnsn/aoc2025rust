@@ -77,7 +77,7 @@ impl IdRange {
 }
 
 fn part_one_invalid_id(id: usize) -> bool {
-    if id.ilog10() % 2 == 0 {
+    if id.ilog10().is_multiple_of(2) {
         return false;
     }
     let decimals = format!("{}", id).chars().collect::<Vec<char>>();
