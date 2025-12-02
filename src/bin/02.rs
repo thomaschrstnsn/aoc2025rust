@@ -127,7 +127,7 @@ impl FromStr for IdRanges {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let ranges: IdRanges = input.parse().ok()?;
+    let ranges: IdRanges = input.trim_end().parse().expect("can parse");
     let sum = ranges
         .as_ref()
         .iter()
@@ -138,7 +138,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let ranges: IdRanges = input.parse().ok()?;
+    let ranges: IdRanges = input.trim_end().parse().expect("can parse");
     let sum = ranges
         .as_ref()
         .iter()
