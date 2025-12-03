@@ -50,22 +50,20 @@ impl Bank {
     pub fn max_n_combinations(&self, n: usize) -> u64 {
         let mut start = 0;
         let mut end = self.0.len() - n + 1;
+        let mut sum = 0;
 
         debug_assert!(start < end);
 
-        let mut digits = Vec::with_capacity(n);
         for _ in 1..=n {
             let (next_start, val) = self.max_from(start, end);
 
-            let c = char::from_digit(val as u32, 10).expect("is a decimal digit");
-
-            digits.push(c);
+            sum = sum * 10 + val as u64;
 
             start = next_start + 1;
             end += 1;
         }
-        let string: String = digits.iter().collect();
-        string.parse().expect("parses")
+
+        sum
     }
 
     fn max_from(&self, start: usize, end: usize) -> (usize, u8) {
