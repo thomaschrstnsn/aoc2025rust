@@ -127,7 +127,7 @@ impl FromStr for MathProblemSet<PartOne> {
 
             let problem = MathProblem::<PartOne> {
                 input: problem,
-                op: operators[index].clone(),
+                op: operators[index],
                 marker: PhantomData,
             };
 
@@ -178,10 +178,7 @@ impl FromStr for MathProblemSet<PartTwo> {
                         while problem_nums.get(num_idx).is_none() {
                             problem_nums.push(String::new());
                         }
-                        problem_nums
-                            .get_mut(num_idx)
-                            .unwrap()
-                            .push_str(&num_char.to_string());
+                        problem_nums.get_mut(num_idx).unwrap().push(num_char);
                     } else if num_char.is_ascii_whitespace() && seen_digit {
                         break;
                     }
