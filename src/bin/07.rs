@@ -1,24 +1,26 @@
-use std::collections::{HashMap, HashSet};
-
 advent_of_code::solution!(7);
 
-pub fn part_one(input: &str) -> Option<usize> {
-    let mut num_splits = 0;
-
-    let mut beams = HashSet::new();
+fn do_the_beams_thing(input: &str) -> (usize, Vec<Option<usize>>) {
+    let mut splits = 0;
+    let length = input.lines().next().unwrap().len();
+    let mut beams: Vec<Option<usize>> = (0..length).map(|_| None).collect();
     for line in input.lines() {
         for (idx, char) in line.chars().enumerate().filter(|(_, c)| *c != '.') {
             match char {
                 'S' => {
-                    beams.insert(idx);
+                    beams[idx] = Some(1);
                 }
                 '^' => {
-                    if beams.contains(&idx) {
+                    if let Some(value) = beams[idx] {
                         // split
-                        num_splits += 1;
-                        beams.remove(&idx);
-                        beams.insert(idx - 1);
-                        beams.insert(idx + 1);
+                        splits += 1;
+                        beams[idx] = None;
+
+                        let left = beams[idx - 1].unwrap_or(0) + value;
+                        beams[idx - 1] = Some(left);
+
+                        let right = beams[idx + 1].unwrap_or(0) + value;
+                        beams[idx + 1] = Some(right);
                     }
                 }
                 invalid => panic!("unexpected input: {invalid}"),
@@ -26,39 +28,17 @@ pub fn part_one(input: &str) -> Option<usize> {
         }
     }
 
-    Some(num_splits)
+    (splits, beams)
+}
+
+pub fn part_one(input: &str) -> Option<usize> {
+    let (splits, _) = do_the_beams_thing(input);
+    splits.into()
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let mut beams: HashMap<usize, usize> = HashMap::new();
-    for line in input.lines() {
-        for (idx, char) in line.chars().enumerate().filter(|(_, c)| *c != '.') {
-            match char {
-                'S' => {
-                    beams.insert(idx, 1);
-                }
-                '^' => {
-                    if let Some(value) = beams.get(&idx).cloned() {
-                        // split
-                        beams.remove(&idx);
-
-                        beams
-                            .entry(idx - 1)
-                            .and_modify(|v| *v += value)
-                            .or_insert(value);
-
-                        beams
-                            .entry(idx + 1)
-                            .and_modify(|v| *v += value)
-                            .or_insert(value);
-                    }
-                }
-                invalid => panic!("unexpected input: {invalid}"),
-            }
-        }
-    }
-
-    beams.values().sum::<usize>().into()
+    let (_, beams) = do_the_beams_thing(input);
+    beams.into_iter().flatten().sum::<usize>().into()
 }
 
 #[cfg(test)]
