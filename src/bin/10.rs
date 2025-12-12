@@ -6,7 +6,7 @@ advent_of_code::solution!(10);
 
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashSet};
-use std::ops::Range;
+use std::ops::{Deref, Range};
 
 fn min_sum_with_predicate<F>(ranges: &[Range<usize>], mut pred: F) -> Option<(usize, Vec<usize>)>
 where
@@ -136,6 +136,10 @@ impl SingleWiringSchematic {
         }
         bf.0
     }
+
+    fn iter(&self) -> impl Iterator<Item = &u8> {
+        self.0.iter()
+    }
 }
 
 #[derive(Debug, Error)]
@@ -176,6 +180,14 @@ impl FromStr for SingleWiringSchematic {
 
 #[derive(Debug)]
 struct JoltageReqs(Vec<usize>);
+
+impl Deref for JoltageReqs {
+    type Target = Vec<usize>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(Debug, Error)]
 enum JoltageReqsParseError {
@@ -220,6 +232,7 @@ struct Machine {
     joltage: JoltageReqs,
 }
 
+/// Lights
 impl Machine {
     fn light_target(&self) -> u16 {
         self.indicator_lights.as_u16()
@@ -256,6 +269,43 @@ impl Machine {
         }
 
         state == target
+    }
+}
+
+/// Joltage
+impl Machine {
+    fn fewest_button_presses_for_joltage(&self) -> usize {
+        let ranges = self
+            .button_wiring
+            .iter()
+            .map(|bw| {
+                let max = bw
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, _)| self.joltage[idx])
+                    .max()
+                    .unwrap();
+                0..max
+            })
+            .collect::<Vec<_>>();
+
+        let result =
+            min_sum_with_predicate(&ranges, |vals| self.check_button_setup_for_joltage(vals));
+
+        result.unwrap().0
+    }
+
+    fn check_button_setup_for_joltage(&self, setup: &[usize]) -> bool {
+        let mut state = (0..(self.joltage.len())).map(|_| 0).collect::<Vec<_>>();
+        let target = &self.joltage.0;
+
+        for (button_idx, &repeats) in setup.iter().enumerate() {
+            for idx in self.button_wiring[button_idx].iter() {
+                state[*idx as usize] += repeats;
+            }
+        }
+
+        state == *target
     }
 }
 
@@ -335,8 +385,19 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(fewest)
 }
 
-pub fn part_two(input: &str) -> Option<u64> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let machines = input
+        .lines()
+        .map(|line| line.parse::<Machine>())
+        .collect::<Result<Vec<_>, _>>()
+        .expect("can parse");
+
+    let fewest = machines
+        .iter()
+        .map(|m| m.fewest_button_presses_for_joltage())
+        .sum();
+
+    Some(fewest)
 }
 
 #[cfg(test)]
@@ -379,6 +440,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(33));
     }
 }
