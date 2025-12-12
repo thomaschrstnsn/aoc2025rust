@@ -4,8 +4,50 @@ use thiserror::Error;
 
 advent_of_code::solution!(10);
 
-#[derive(Debug)]
-struct IndicatorLights(Vec<bool>);
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
+use std::ops::Range;
+
+fn min_sum_with_predicate<F>(ranges: &[Range<usize>], mut pred: F) -> Option<(usize, Vec<usize>)>
+where
+    F: FnMut(&[usize]) -> bool,
+{
+    if ranges.is_empty() {
+        return None;
+    }
+
+    // Initial combination: all starts
+    let start: Vec<usize> = ranges.iter().map(|r| r.start).collect();
+    let start_sum: usize = start.iter().copied().sum();
+
+    // Min-heap via Reverse (BinaryHeap is a max-heap by default)
+    let mut heap: BinaryHeap<(Reverse<usize>, Vec<usize>)> = BinaryHeap::new();
+    let mut seen: HashSet<Vec<usize>> = HashSet::new();
+
+    heap.push((Reverse(start_sum), start.clone()));
+    seen.insert(start.clone());
+
+    while let Some((Reverse(sum), combo)) = heap.pop() {
+        // Check predicate on the current best-sum combination
+        if pred(&combo) {
+            return Some((sum, combo));
+        }
+
+        // Generate neighbors by bumping one coordinate
+        for dim in 0..ranges.len() {
+            let mut next = combo.clone();
+            next[dim] += 1;
+
+            if next[dim] < ranges[dim].end && seen.insert(next.clone()) {
+                // Update sum incrementally:
+                let next_sum = sum - combo[dim] + next[dim];
+                heap.push((Reverse(next_sum), next));
+            }
+        }
+    }
+
+    None
+}
 
 #[derive(Debug, Clone, Copy)]
 struct BitField(u16);
@@ -26,6 +68,9 @@ impl BitField {
         self.0
     }
 }
+
+#[derive(Debug)]
+struct IndicatorLights(Vec<bool>);
 
 impl IndicatorLights {
     fn as_u16(&self) -> u16 {
@@ -175,57 +220,12 @@ struct Machine {
     joltage: JoltageReqs,
 }
 
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet};
-use std::ops::Range;
-
-fn min_sum_with_predicate<F>(ranges: &[Range<usize>], mut pred: F) -> Option<(usize, Vec<usize>)>
-where
-    F: FnMut(&[usize]) -> bool,
-{
-    if ranges.is_empty() {
-        return None;
-    }
-
-    // Initial combination: all starts
-    let start: Vec<usize> = ranges.iter().map(|r| r.start).collect();
-    let start_sum: usize = start.iter().copied().sum();
-
-    // Min-heap via Reverse (BinaryHeap is a max-heap by default)
-    let mut heap: BinaryHeap<(Reverse<usize>, Vec<usize>)> = BinaryHeap::new();
-    let mut seen: HashSet<Vec<usize>> = HashSet::new();
-
-    heap.push((Reverse(start_sum), start.clone()));
-    seen.insert(start.clone());
-
-    while let Some((Reverse(sum), combo)) = heap.pop() {
-        // Check predicate on the current best-sum combination
-        if pred(&combo) {
-            return Some((sum, combo));
-        }
-
-        // Generate neighbors by bumping one coordinate
-        for dim in 0..ranges.len() {
-            let mut next = combo.clone();
-            next[dim] += 1;
-
-            if next[dim] < ranges[dim].end && seen.insert(next.clone()) {
-                // Update sum incrementally:
-                let next_sum = sum - combo[dim] + next[dim];
-                heap.push((Reverse(next_sum), next));
-            }
-        }
-    }
-
-    None
-}
-
 impl Machine {
-    fn target(&self) -> u16 {
+    fn light_target(&self) -> u16 {
         self.indicator_lights.as_u16()
     }
 
-    fn fewest_button_presses(&self) -> (usize, Vec<usize>) {
+    fn fewest_button_presses_for_lights(&self) -> (usize, Vec<usize>) {
         let ranges = (0..self.button_wiring.len())
             .map(|_| 0..3)
             .collect::<Vec<_>>();
@@ -236,14 +236,16 @@ impl Machine {
             .map(|bw| bw.as_u16())
             .collect::<Vec<_>>();
 
-        let result = min_sum_with_predicate(&ranges, |vals| self.test_button_setup(vals, &masks));
+        let result = min_sum_with_predicate(&ranges, |vals| {
+            self.check_button_setup_for_lights(vals, &masks)
+        });
 
         result.unwrap()
     }
 
-    fn test_button_setup(&self, setup: &[usize], masks: &[u16]) -> bool {
+    fn check_button_setup_for_lights(&self, setup: &[usize], masks: &[u16]) -> bool {
         let mut state = 0u16;
-        let target = self.target();
+        let target = self.light_target();
 
         for (button_idx, &repeats) in setup.iter().enumerate() {
             let mask = masks[button_idx];
@@ -325,7 +327,10 @@ pub fn part_one(input: &str) -> Option<usize> {
         .collect::<Result<Vec<_>, _>>()
         .expect("can parse");
 
-    let fewest = machines.iter().map(|m| m.fewest_button_presses().0).sum();
+    let fewest = machines
+        .iter()
+        .map(|m| m.fewest_button_presses_for_lights().0)
+        .sum();
 
     Some(fewest)
 }
@@ -344,7 +349,7 @@ mod tests {
         let line = file.lines().next().unwrap();
         let machine: Machine = line.parse().expect("parses");
 
-        let actual = machine.fewest_button_presses();
+        let actual = machine.fewest_button_presses_for_lights();
         dbg!(&actual.1);
         assert_eq!(actual.0, 2);
     }
