@@ -5,12 +5,12 @@ use thiserror::Error;
 advent_of_code::solution!(10);
 
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::ops::{Deref, Range};
 
-fn min_sum_with_predicate<F>(ranges: &[Range<usize>], mut pred: F) -> Option<(usize, Vec<usize>)>
+fn min_sum_with_predicate<F>(ranges: &[Range<usize>], pred: F) -> Option<(usize, Vec<usize>)>
 where
-    F: FnMut(&[usize]) -> bool,
+    F: Fn(&[usize]) -> bool,
 {
     if ranges.is_empty() {
         return None;
@@ -275,19 +275,52 @@ impl Machine {
 /// Joltage
 impl Machine {
     fn fewest_button_presses_for_joltage(&self) -> usize {
+        // map into count of buttons hitting each joltage
+        let impact = self
+            .joltage
+            .iter()
+            .enumerate()
+            .map(|(idx, _)| {
+                let hits = self
+                    .button_wiring
+                    .iter()
+                    .filter(|bw| bw.iter().any(|&b_idx| b_idx as usize == idx))
+                    .count();
+                (idx as u8, hits)
+            })
+            .collect::<HashMap<u8, usize>>();
+
         let ranges = self
             .button_wiring
             .iter()
             .map(|bw| {
+                let min = bw
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, _)| {
+                        let impact_for_button = impact.get(&(idx as u8)).copied().unwrap();
+
+                        let jolt = self.joltage[idx];
+
+                        if impact_for_button == 1 {
+                            jolt
+                        } else {
+                            jolt / impact_for_button
+                        }
+                    })
+                    .min()
+                    .unwrap();
                 let max = bw
                     .iter()
                     .enumerate()
                     .map(|(idx, _)| self.joltage[idx])
                     .max()
                     .unwrap();
-                0..max
+                min..(max + 1)
             })
             .collect::<Vec<_>>();
+
+        dbg!(&ranges);
 
         let result =
             min_sum_with_predicate(&ranges, |vals| self.check_button_setup_for_joltage(vals));
