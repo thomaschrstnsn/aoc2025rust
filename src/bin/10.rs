@@ -320,7 +320,9 @@ impl Machine {
             })
             .collect::<Vec<_>>();
 
-        dbg!(&ranges);
+        let combinations: usize = ranges.iter().map(|r| r.start.abs_diff(r.end)).product();
+
+        dbg!(combinations, &ranges);
 
         let result =
             min_sum_with_predicate(&ranges, |vals| self.check_button_setup_for_joltage(vals));
@@ -427,7 +429,11 @@ pub fn part_two(input: &str) -> Option<usize> {
 
     let fewest = machines
         .iter()
-        .map(|m| m.fewest_button_presses_for_joltage())
+        .enumerate()
+        .map(|(idx, m)| {
+            println!("machine {idx}");
+            m.fewest_button_presses_for_joltage()
+        })
         .sum();
 
     Some(fewest)
